@@ -155,36 +155,53 @@ config.configFile(process.argv[2], function (config, oldConfig) {
         if (timers[key].length > 0) {
           var pctThreshold = config.percentThreshold || 90;
           var values = timers[key].sort(function (a,b) { return a-b; });
+
           var count = values.length;
           var min = values[0];
-          var max = values[count - 1];
-
           var mean = min;
+          var max = values[count - 1];
+          var sum = min;
+
+          var numInThreshold = 1;
+          var meanInThreshold = min;
           var maxAtThreshold = max;
+          var sumInThreshold = min;
 
           if (count > 1) {
             var thresholdIndex = Math.round(((100 - pctThreshold) / 100) * count);
-            var numInThreshold = count - thresholdIndex;
-            values = values.slice(0, numInThreshold);
+            numInThreshold = count - thresholdIndex;
             maxAtThreshold = values[numInThreshold - 1];
 
             // average the remaining timings
-            var sum = 0;
+            sumInThreshold = 0;
             for (var i = 0; i < numInThreshold; i++) {
+              sumInThreshold += values[i];
+            }
+
+            sum = sumInThreshold;
+            for (var i = numInThreshold; i < count; i++) {
               sum += values[i];
             }
 
-            mean = sum / numInThreshold;
+            mean = sum / count;
+            meanInThreshold = sumInThreshold / numInThreshold;
           }
 
           timers[key] = [];
 
           var message = "";
-          message += 'stats.timers.' + key + '.mean ' + mean + ' ' + ts + "\n";
-          message += 'stats.timers.' + key + '.upper ' + max + ' ' + ts + "\n";
-          message += 'stats.timers.' + key + '.upper_' + pctThreshold + ' ' + maxAtThreshold + ' ' + ts + "\n";
-          message += 'stats.timers.' + key + '.lower ' + min + ' ' + ts + "\n";
+
           message += 'stats.timers.' + key + '.count ' + count + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.lower ' + min + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.mean '  + mean + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.upper ' + max + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.sum '   + sum + ' ' + ts + "\n";
+
+          message += 'stats.timers.' + key + '.count_' + pctThreshold + ' ' + numInThreshold + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.mean_'  + pctThreshold + ' ' + meanInThreshold + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.upper_' + pctThreshold + ' ' + maxAtThreshold + ' ' + ts + "\n";
+          message += 'stats.timers.' + key + '.sum_'   + pctThreshold + ' ' + sumInThreshold + ' ' + ts + "\n";
+
           statString += message;
 
           numStats += 1;
@@ -192,6 +209,7 @@ config.configFile(process.argv[2], function (config, oldConfig) {
       }
 
       statString += 'statsd.numStats ' + numStats + ' ' + ts + "\n";
+      //sys.log(statString);
       
       if (config.graphiteHost) {
         try {
