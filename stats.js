@@ -142,13 +142,14 @@ config.configFile(process.argv[2], function (config, oldConfig) {
       var key;
 
       for (key in counters) {
-        var value = counters[key] / (flushInterval / 1000);
-        var message = 'stats.' + key + ' ' + value + ' ' + ts + "\n";
-        message += 'stats_counts.' + key + ' ' + counters[key] + ' ' + ts + "\n";
-        statString += message;
-        counters[key] = 0;
-
-        numStats += 1;
+        if (counters[key] != null) {
+          var value = counters[key] / (flushInterval / 1000);
+          var message = 'stats.' + key + ' ' + value + ' ' + ts + "\n";
+          message += 'stats_counts.' + key + ' ' + counters[key] + ' ' + ts + "\n";
+          statString += message;
+          counters[key] = null;
+          numStats += 1;
+        }
       }
 
       for (key in timers) {
