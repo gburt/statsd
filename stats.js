@@ -5,6 +5,7 @@ var dgram  = require('dgram')
 
 var counters = {};
 var timers = {};
+var numHits = 0;
 var debugInt, flushInt, server, mgmtServer;
 var startup_time = Math.round(new Date().getTime() / 1000);
 
@@ -67,6 +68,7 @@ config.configFile(process.argv[2], function (config, oldConfig) {
           }
           counters[key] += Number(fields[0] || 1) * (1 / sampleRate);
         }
+        numHits += 1;
       }
 
       stats['messages']['last_msg_seen'] = Math.round(new Date().getTime() / 1000);
@@ -210,6 +212,9 @@ config.configFile(process.argv[2], function (config, oldConfig) {
       }
 
       statString += 'statsd.numStats ' + numStats + ' ' + ts + "\n";
+      statString += 'statsd.numHits ' + numHits + ' ' + ts + "\n";
+      numHits = 0;
+
       //sys.log(statString);
       
       if (config.graphiteHost) {
